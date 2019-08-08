@@ -1,0 +1,98 @@
+* Rule 02. Intent(ITT)
+** DRD03-J. Do not broadcast sensitive information using an implicit intent
+Android应用的核心组件，如：activities，services，broadcast receivers是通过intent传递消息来进行交付。
+
+广播intent通过 =Context.sendBroadcast()= 进行传输，感兴趣的接收者可以接收此intent。接收者可以动态注册自己通过调用 =Context.registerReceiver()= 并指定 =intentFilter= 作为参数；或者也可以在 =AndroidManifest.xml= 文件中定义 =<receiver>= 标签来静态注册。
+
+当使用 =sendBroadcast()= 时，正常情况下其他应用，包括恶意应用都可以接受到这个广播。
+
+因此，接受广播intent应该被限制，方法如下：
+1. 使用显示intent。显示intent可以指定组件（使用 =setComponent(ComponentName)= ）或类（使用 =setClass(Context, Class)= ）以便只有指定的组件或类才能解析此intent。
+2. 也可以通过使用权限来限制intent的接收者。从Android 4.0开始，可以安全的限制广播在单个应用中通过使用 =Intent.setPackage()= 。
+3. 还可以使用 =LocalBroadcastManager= 类。使用这个类，intent广播永远不会出当前进程。依据Android API Reference， =LocalBroadcastManager= 比 =Context.sendBroadcast(Intent)= 有更多的优点。
+
+*** 不合规代码示例
+下面使用了隐式intent。
+#+BEGIN_SRC java
+public class ServerService extends Service {
+  // ...
+  private void d() {
+    // ...
+    Intent v1 = new Intent();
+    v1.setAction("com.sample.action.server_running");
+    v1.putExtra("local_ip", v0.h);
+    v1.putExtra("port", v0.i);
+    v1.putExtra("code", v0.g);
+    v1.putExtra("connected", v0.s);
+    v1.putExtra("pwd_predefined", v0.r);
+    if (!TextUtils.isEmpty(v0.t)) {
+      v1.putExtra("connected_usr", v0.t);
+    }
+  }
+  this.sendBroadcast(v1);
+}
+#+END_SRC
+
+**** Proof of Concept
+一个应用使用broadcast receiver可以接收此广播消息：
+#+BEGIN_SRC java
+final class MyReceiver extends BroadcastReceiver {
+  public final void onReceive(Context context, Intent intent) {
+    if (intent != null && intent.getAction() != null) {
+      String s = intent.getAction();
+      if (s.equals("com.sample.action.server_running") {
+        String ip = intent.getStringExtra("local_ip");
+        String pwd = intent.getStringExtra("code");
+        String port = intent.getIntExtra("port", 8888);
+        boolean status = intent.getBooleanExtra("connected", false);
+      }
+    }
+  }
+}
+#+END_SRC
+
+*** 合规方案
+如果此intent仅广播/接收在同一应用中，可以使用 =LocalBroadcastManager= 。
+#+BEGIN_SRC java
+Intent intent = new Intent("my-sensitive-event");
+intent.putExtra("event", "this is a test event");
+LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+#+END_SRC
+
+** DRD06. Do not act on malicious intents
+恶意应用可能发送intent到其他应用，应用不期望接收此恶意应用的intent。这可能诱使接收应用采取不恰当的行为从而导致不良的后果。
+
+
+** DRD21-J. Always pass explicit intents to a PendingIntent
+
+** 其他 #1 WebView自动保存密码
+很多时候，我们在使用WebView的过程中忽略了WebView会自动明文保存密码，如果手机未获取root权限的情况下，这样是不会有问题，但对于Android这样很容易获取root权限的系统来说，一旦root以后，就可以在应用的data目录底下找到被明文保存的密码，就会造成用户的个人敏感数据泄露。
+
+可以在初始化WebView以后，配置settings：
+#+BEGIN_SRC java
+webView.getSettings().setSavePassword(false);
+webView.getSettings().setSaveFormData(false);
+#+END_SRC
+
+** 其他 #2 WebView缓存cookie数据
+WebView实际上可以理解是系统浏览器的一部分，所以他也会像系统浏览器一样去管理和保存cookie数据，当会话周期结束或结束当前页面以后，WebView不会主动的去清除缓存cookie数据，同样对于root以后的用户设备来说，这也是一件比较危险的事。
+
+在初始化WebView以后，首先配置settings，设置不保存缓存模式，代码如下：
+#+BEGIN_SRC java
+//  不使用缓存：  
+webView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE); 
+#+END_SRC
+这样还没有结束，在退出当前页面的时候，还需要调用一下清除cookie的操作，此处把清除cookie数据的操作封装成了一个工具类，代码如下：
+#+BEGIN_SRC java
+public class CookieUtils {
+//  清除cookie数据
+public static void clearCookies(Context context){
+        @SuppressWarnings("unused")
+        CookieSyncManager cookieSyncMngr = CookieSyncManager.createInstance(context);
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.removeAllCookie();
+        CookieSyncManager.getInstance().sync();
+}    
+}
+#+END_SRC
+

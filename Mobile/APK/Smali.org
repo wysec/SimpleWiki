@@ -1,0 +1,78 @@
+* 文件头
+在smali文件头3行描述了当前类的一些信息，格式如下。
+.class <访问权限> [修饰关键字] <类名>
+.super <父类名>
+.source <源文件名>
+
+在MainActivity.smali文件中头3行代码如下。
+#+BEGIN_SRC asm
+.class public Lcom/droider/crackme0502/MainActivity;
+.super Landroid/app/Activity;
+.source "MainActivity.java"
+#+END_SRC
+第1行 =.class= 指令指定了当前类的类名。
+第2行 =.super= 指令指定了当前类的父类。
+第3行 =.source= 指令指定了当前类的源文件名。
+
+* 字段
+后面就是类的主体部分了，一个类可以由多个字段或方法组成。smali文件中字段的声明使用 =.field= 指令。字段有静态字段和实例字段两种。
+
+*静态字段* 的声明格式如下。
+#+BEGIN_EXAMPLE
+# static fields
+.field <访问权限> static [修饰关键字] <字段名>:<字段类型>
+#+END_EXAMPLE
+
+*实例字段* 的声明与静态字段类似，只是少了static关键字。
+#+BEGIN_EXAMPLE
+# instance fields
+.field <访问权限> [修饰关键字] <字段名>:<字段类型>
+#+END_EXAMPLE
+例子：
+#+BEGIN_SRC asm
+# instance fields
+.field private btnAnno:Landroid/widget/Button;
+#+END_SRC
+
+* 方法
+smali文件中方法的声明使用 =.method= 指令。方法有直接方法和虚方法两种。
+
+*直接方法* 声明格式如下。
+#+BEGIN_EXAMPLE
+# direct methods
+.method <访问权限> [修饰关键字] <方法原型>
+    <.locals>
+    [.parameter]
+    [.prologue]
+    [.line]
+    <代码体>
+.end method
+#+END_EXAMPLE
++ =direct methods= 是baksmali添加的注释，访问权限和修饰关键字与字段描述相同， _方法原型_ 描述了方法的名称、参数和返回值。
++ =.locals= 指定了使用的局部变量的个数。
++ =.parameter= 指定了方法的参数。每个 =.parameter= 指令表明使用一个参数。比如方法中使用到3个参数，那么就会出现3条 =.parameter= 指令。
++ =.prologue= 指定了代码的开始处，混淆过的代码可能去掉了该指令。
++ =.line= 指定了该处指令在源代码中的行号，混淆过的代码可能去掉了该指令。
+
+*虚方法* 的声明与直接方法相同，只是开始处的注释为 =virtual methods= 。
+
+如果一个类实现了接口，会在smali文件中使用 =.implements= 指令指出。相应的格式如下。
+#+BEGIN_EXAMPLE
+# interfaces
+.implements <接口名>
+#+END_EXAMPLE
+
+如果一个类使用了注释，会在文件中使用 =.annotation= 指令指出。注解的格式声明如下。
+#+BEGIN_EXAMPLE
+# annotations
+.annotation [注解属性] <注解类名>
+    [注解字段 = 值]
+.end annoatation
+#+END_EXAMPLE
+注解的作用范围可以是类、方法或字段。如果注解的作用范围是类， =.annotation= 指令会直接定义在smali文件中；如果是方法或字段， =.annotation= 指令则会包含在方法或字段定义中。 如下面代码。
+#+BEGIN_SRC asm
+
+#+END_SRC
+
+
+在smali中的invoke-virtual时，指此方法是protected或public。 若是invoke-direct时，一般是private或<init>方法

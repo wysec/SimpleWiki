@@ -1,0 +1,62 @@
+#+OPTIONS: ^:nil
+
+
+** 基础理论
+
+** 下断点
+1. 在IDA安装目录./dbgsrv中找到 =android_server= ，将其上传到设备上 =adb push android_server /data/local/tmp/= 。赋予其可执行权限 =chmod 777 oid_server= ，然后执行程序 =./android_server= 。
+
+
+2. [@2] 端口转发：
+#+BEGIN_EXAMPLE
+adb forward tcp:23946 tcp:23946
+#+END_EXAMPLE
+
+
+3. [@3] 以debug模式启动apk：
+#+BEGIN_EXAMPLE
+adb shell am start -D -n cn.com.xib.xibpb.v3.xiben/com.hundsun.mobile.v3.ui.SplashActivity
+#+END_EXAMPLE
+- _cn.com.xib.xibpb.v3.xiben_ 是包名
+- _com.hundsun.mobile.v3.ui.SplashActivity_ 是activity名
+
+
+5. [@4] 打开IDA，选择Debugger->Attach->Andorid debugger，在Hostname输入 =127.0.0.1= ，端口默认，然后选择OK，选择被调试的程序。
+
+
+4. [@5] 使用jdb命令启动连接attach调试器：
+#+BEGIN_EXAMPLE
+jdb -connect com.sun.jdi.SocketAttach:hostname=127.0.0.1,port=8700
+#+END_EXAMPLE
+如果报错，可以使用DDMS查看被调试应用对应的端口。
+
+
+6. [@6 设置Debugger Options选项，勾选Susped on process entry point，Suspend on thread start/exit，Suspend on library load/unload。
+
+7. [@7] 选择Debugger->Debugger windows->Module list，查找并选择libart.so，再查找openMemory函数，进入函数所在位置并点击下端点。F9运行，F8单步调试。
+
+
+** ARM语法
+
+https://blog.csdn.net/zqixiao_09/article/details/50726544
+
+*** 寄存器
+
+R0~R12通用寄存器（R12的使用要慎重），习惯上，
+- R0常在算数运算中作为累加器，或者存储函数的返回值。
+- R7常用于存储系统调用号。
+- R11常作为栈帧指针来标记函数栈帧的边界。
+- ARM的函数调用约定规定，函数的前四个参数存储在寄存器r0~r3中。
+
+R13是堆栈指针（SP，Stack Point），它指向堆栈的顶部。
+
+R14是链接寄存器（LR，Link Register），当进行函数调用时，链接寄存器被更新为调用函数指令的下一条指令的地址。（函数返回地址）
+
+R15是程序计数器（PC，Program Counter），用于保存下一条指令的地址。
+
+
+
+
+** 参考
+
+http://www.520monkey.com/archives/806

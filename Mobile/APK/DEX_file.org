@@ -1,0 +1,106 @@
+-*-  mode: org; mode: visual-line -*-
+# -*- Mode: Org -*-
+#+TITLE:       DEX文件结构
+#+AUTHOR: wy
+#+DATE:      2017-06-23
+#+STARTUP: indent
+#+OPTIONS: \n:t
+#+OPTIONS: ^:nil
+
+
+* 关于DEX文件
+Dalvik Executable File，DEX是Android系统的可执行文件，包含应用程序的全部操作指令以及运行时数据。在程序编译过程中，java源文件先被编译成class文件，然后通过dx工具将多个class文件整合为一个dex文件。这样的文件结构使得各个类能够共享数据，充分减少了存储空间，提升了运行效率。
+
+
+* DEX文件数据结构
+下面是dex文件用到的数据类型。
+| 类型      | 含义                               |
+| byte      | 8bit有符号整数                     |
+| ubyte     | 8bit无符号整数                     |
+| short     | 16bit有符号整数，小端              |
+| ushoart   | 16bit无符号整数，小端              |
+| int       | 32bit有符号整数，小端              |
+| uint      | 32bit无符号整数，小端              |
+| long      | 64bit有符号整数，小端              |
+| ulong     | 64bit无符号整数，小端              |
+| sleb128   | 有符号LEB128，可变长度1~5字节      |
+| uleb128   | 无符号LEB128，可变长度1~5字节      |
+| uleb128p1 | 无符号LEB128值加1，可变长度1~5字节 |
+
+LEB128（“Little-Endian Base 128”）是用于任意有符号或无符号数的可变长度编码。每个LEB128由1~5个字节组成，所有的字节组合在一起表示一个32位的数据。每个字节只有7位有效位，如果第1个字节的最高位为1，表示LEB128需要使用到第2个字节，如果第2个字节的最高位为1，表示会使用到第3个字节，以此类推，直到最后的字节最高位为0。
+
+/LEB128最多只会使用到5个字节，如果读取5个字节后下一个字节最高位仍为1，则表示该dex文件无效，Dalvik虚拟机在验证dex时会失败返回。/
+
+
+* DEX文件布局
+DEX文件的整体结构比较简单，它是由多个结构体组合而成的。
+| 名字           | 格式                 | 描述                 |
+| header         | header_item          | 文件头               |
+| string_ids     | string_id_item[]     | 字符串标识符列表     |
+| type_ids       | type_id_item[]       | 类型标识符列表       |
+| proto_ids      | proto_id_item[]      | 方法原型标识符列表   |
+| field_ids      | field_id_item[]      | 字段标识符列表       |
+| method_ids     | method_id_item[]     | 方法标识符列表       |
+| class_defs     | class_def_item[]     | 类定义列表           |
+| call_site_ids  | call_site_id_item[]  | 调用站点标识符列表   |
+| method_handles | method_handle_item[] | 方法句柄列表         |
+| data           | ubyte[]              | 数据区               |
+| link_data      | ubyte[]              | 静态链接文件中的数据 |
+
+** 详细描述
+*string_ids* :这些是用于该文件的所有字符串的标识符，用于内部命名（如：类型描述）或代码引用的常量对象。此列表必须按字符串内容排序，使用UTF-16代码点值，并且不能包含任何重复的条目。
+
+*type_ids* :这些是由该文件引用的所有类型（类，数组或原始类型）的标识符，无论是否在文件中定义。 此列表必须由string_id索引排序，并且不得包含任何重复的条目。
+
+*proto_ids* :这些是此文件引用的所有原型的标识符。此列表必须按返回类型（按type_id索引）主顺序排序，然后通过参数列表（字典排序，由type_id索引排序的各个参数）进行排序。 列表不能包含任何重复的条目。
+
+*field_ids* :这些是由该文件引用的所有字段的标识符，无论是否在文件中定义。 此列表必须排序，其中定义类型（按type_id索引）是主要顺序，字段名称（通过string_id索引）是中间顺序，类型（按type_id索引）是次要顺序。 列表不能包含任何重复的条目。
+
+*method_ids* :这些是由该文件引用的所有方法的标识符，无论是否在文件中定义。 该列表必须进行排序，其中定义类型（按type_id索引）是主要顺序，方法名称（通过string_id索引）是中间顺序，方法原型（通过proto_id索引）是次要顺序。 列表不能包含任何重复的条目。
+
+*class_defs* :必须对这些类进行排序，使得给定类的超类和实现的接口出现在引用类之前的列表中。 此外，对于同名类的定义在列表中不止一次出现是无效的。
+
+*call_site_ids* :这些是由该文件引用的所有调用站点的标识符，无论是否在文件中定义。 该列表必须按照call_site_off的升序进行排序。
+
+*method_handles* :该文件所引用的所有方法句柄的列表，无论是否在文件中定义。 此列表未排序，并且可能包含将在逻辑上对应于不同方法句柄实例的重复项。
+
+*data* ：数据区，包含上表列出的所有支持数据。 不同的项目具有不同的对齐要求，并且如果需要，在每个项目之前插入填充字节以实现正确的对准。
+
+*link_data* :静态链接文件中使用的数据。 本节中的数据格式未经本文档的说明。 此部分在未链接的文件中为空，运行时实现可能会使用它们，因为它们是合适的。
+
+** DEX文件头
+| 字段名称        | 格式      | 描述                                       |
+| magic           | ubyte  | 魔数值，值为"dex\n035\0"                   |
+| checksum        | uint      | 文件除magic和此部分的adler32校验和         |
+| signature       | ubyte | 文件除magic,checksum和此部分的sha1哈希     |
+| file_size       | uint      | 整个文件的大小（包括header），以字节为单位 |
+| header_size     | uint=0x70 | 整个header的大小，以字节为单位             |
+| endian_tag      | uint      | 文件字节顺序，dex是小端顺序                |
+| link_size       | uint      | 链接部分大小，为0则表示没有静态链接        |
+| link_off        | uint      | 从文件开始到链接部分的偏移                 |
+| map_off         | uint      | 从开始到map item的偏移。偏移量必需非零     |
+| string_ids_size | uint      | 字符串标识符列表中的字符串数               |
+| string_ids_off  | uint      | 从开始到字符串标识符的偏移                 |
+| type_ids_size   | uint      | 类型标识符列表中元素个数，最多65535        |
+| type_ids_off    | uint      | 从开始到类型标识符列表的偏移               |
+| proto_ids_size  | uint      | 原型标识符列表中元素数量，最多65535        |
+| proto_ids_off   | uint      | 从开始到原型标识符列表的偏移               |
+| field_ids_size  | uint      | 字段标识符列表中元素的个数                 |
+| field_ids_off   | uint      | 从开始到字段标识符列表的偏移               |
+| method_ids_size | uint      | 方法标识符列表中元素的个数                 |
+| method_ids_off  | uint      | 从开始到方法标识符列表的偏移               |
+| class_defs_size | uint      | 类定义列表中元素的个数                     |
+| class_defs_off  | uint      | 从开始到类定义列表的偏移                   |
+| data_size       | uint      | 数据段大小，字节为单位，sizeof(uint)偶数倍 |
+| data_off        | unit      | 从开始到数据段部分的偏移                   |
+
+
+* ODEX文件
+ODEX是OptimizedDEX的缩写，表示经过优化的dex文件。
+
+** ODEX文件结构
+ODEX文件的结构可以理解为DEX文件的一个超集。ODEX文件在DEX文件头添加了一些数据，然后在DEX文件尾部添加了DEX文件的依赖库以及一些辅助数据。
+
+|ODEX文件头|DEX文件|依赖库|辅助数据|
+
+

@@ -1,0 +1,12 @@
+* Rule 05. Permission (PER)
+** DRD05-J. Do not grant URI permissions on implicit intents
+
+** DRD14-J. Check that a calling app has appropriate permissions before responding
+如果一个app使用赋予的权限来响应一个调用app的请求，那么它需要检查这个调用app有恰当的权限。否则，这个响应app可能授予调用app其不应有的权限。
+
+可使用方法 =Context.checkCallingPermission()= 和 =Context.enforceCallingPermission()= 来检查调用app是否有正确的权限。
+
+** DRD16-X. Explicitly define the exported attribute for private components
+
+** DRD20-C. Specify permissions when creating files via the NDK
+

@@ -1,0 +1,148 @@
+* 关于ADB
+Android 调试桥 (adb) 是一个通用命令行工具，其允许您与模拟器实例或连接的 Android 设备进行通信。它可为各种设备操作提供便利，如安装和调试应用，并提供对 Unix shell（可用来在模拟器或连接的设备上运行各种命令）的访问。该工具作为一个客户端-服务器程序，包括三个组件：
+
++ *客户端* ，该组件发送命令。客户端在开发计算机上运行。可以通过发出 adb 命令从命令行终端调用客户端。
++ *后台程序* ，该组件在设备上运行命令。后台程序在每个模拟器或设备实例上作为后台进程运行。
++ *服务器* ，该组件管理客户端和后台程序之间的通信。服务器在开发计算机上作为后台进程运行。
+
+* 查询设备
+使用 devices 命令生成已连接的模拟器/设备的列表：
+#+BEGIN_QUOTE
+adb devices
+#+END_QUOTE
+
+实例的连接状态可为下列状态之一：
++ offline — 实例未连接到adb或不响应。
++ device — 实例现在已连接到adb服务器。请注意，此状态并不表示Android系统已完全启动且可以运行，因为在此实例连接到adb时系统仍在启动。不过，在启动后，这将是模拟器/设备实例的正常运行状态。
++ no device — 未连接模拟器/设备。
+
+* 发送命令到设备
+如果多个模拟器/设备实例正在运行，在发出adb命令时您必须指定一个目标实例。因此在命令中使用 -s 选项：
+#+BEGIN_QUOTE
+adb -s serial_number command 
+#+END_QUOTE
+这个序列号通过上面的devices命令获得。
+
+* 安装应用：
+#+BEGIN_QUOTE
+adb install path_to_apk
+#+END_QUOTE
+
+*注意：* 如果使用 Android Studio，则无需直接使用 adb（或 aapt）在模拟器/设备上安装您的应用。而是由 Android Studio 为您处理应用的打包和安装。
+
+* 设置端口转发
+您可以使用 forward 命令设置任意端口转发 — 将对特定主机端口的请求转发到模拟器/设备实例上的其他端口。下面向您介绍如何设置主机端口 6100 到模拟器/设备端口 7100 的转发：
+#+BEGIN_QUOTE
+adb forward tcp:6100 tcp:7100
+#+END_QUOTE
+
+您也可以使用 adb 设置传输到指定的抽象 UNIX 网域套接字的转发，如下所示：
+#+BEGIN_QUOTE
+adb forward tcp:6100 local:logd 
+#+END_QUOTE
+
+* 将文件复制到设备/从设备复制文件
+您可以使用 adb 命令 pull 和 push 将文件复制到模拟器/设备实例或从其中复制文件。
+要从模拟器或设备复制文件或目录（及其子目录），请使用：
+#+BEGIN_QUOTE
+adb pull remote local
+#+END_QUOTE
+
+要将文件文件或目录（及其子目录）复制到模拟器或设备，请使用:
+#+BEGIN_QUOTE
+adb push local remote
+#+END_QUOTE
+
+* 停止 adb 服务器
+#+BEGIN_QUOTE
+adb kill-server
+#+END_QUOTE
+
+* 发出 shell 命令
+可以使用 shell 命令通过 adb 发出设备命令，可以进入或不进入模拟器/设备实例上的 adb 远程 shell。
+#+BEGIN_QUOTE
+adb [-d|-e|-s serial_number] shell shell_command
+#+END_QUOTE
+
+或者，使用如下命令进入模拟器/设备实例上的远程 shell：
+#+BEGIN_QUOTE
+adb [-d|-e|-s serial_number] shell
+#+END_QUOTE
+
+进入设备的shell： adb -d shell
+
+* 进行屏幕截图
+screencap 命令是一个用于对设备显示屏进行屏幕截图的 shell 实用程序。在 shell 中，此语法为：
+#+BEGIN_QUOTE
+screencap filename
+#+END_QUOTE
+
+要从命令行使用 screencap，请输入以下命令：
+#+BEGIN_QUOTE
+$ adb shell screencap /sdcard/screen.png
+#+END_QUOTE
+
+* 录制视频
+screenrecord 命令是一个用于录制设备（运行 Android 4.4（API 级别 19）及更高版本）显示屏的 shell 实用程序。此实用程序将屏幕 Activity 录制到 MPEG-4 文件。
+*注意：* 音频不与视频文件一起录制。
+
+在 shell 中，此语法为：
+#+BEGIN_QUOTE
+screenrecord [options] filename
+#+END_QUOTE
+
+要从命令行使用 screenrecord，请输入以下命令：
+#+BEGIN_QUOTE
+$ adb shell screenrecord /sdcard/demo.mp4
+#+END_QUOTE
+按 Control + C 停止屏幕录制，否则，到三分钟或 --time-limit 设置的时间限制时，录制将自动停止。
+
+下面是一个录制会话示例：
+#+BEGIN_EXAMPLE
+$ adb shell
+shell@ $ screenrecord --verbose /sdcard/demo.mp4
+(press Control + C to stop)
+shell@ $ exit
+$ adb pull /sdcard/demo.mp4
+#+END_EXAMPLE
+
+* 读取应用的 ART 配置文件
+
+* 其他 shell 命令
+查看系统安装app的包名
+#+BEGIN_QUOTE
+adb shell pm list packages
+#+END_QUOTE
+
+查看某个软件的全路径
+#+BEGIN_QUOTE
+adb shell pm path packagename
+#+END_QUOTE
+
+获取手机上的app
+#+BEGIN_QUOTE
+adb pull /full/path/to/your.apk /path/to/desti
+#+END_QUOTE
+
+查看安装的第三方app
+#+BEGIN_QUOTE
+adb shell pm list packages -f -3
+#+END_QUOTE
+
+* ADB Logcat
+通过logcat命令来查看日志内容，命令行输入:
+#+BEGIN_QUOTE
+adb logcat
+#+END_QUOTE
+
+以调试模式启动程序：
+adb shell am start -D -n com.myexample.crackme/.MainActivity
+
+
+
+
+
+
+* 参考
+https://developer.android.com/studio/command-line/adb.html?hl=zh-cn
+http://adbshell.com/

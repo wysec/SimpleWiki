@@ -1,0 +1,20 @@
+* Rule 07. Miscellaneous (MSC)
+** DRD10-X. Do not release apps that are debuggable
+Android在manifest文件中设置属性 =android:debuggable= 为true，以便此应用可以被调试。默认这个属性值false，但是在开发时此值常被设置为true以方便调试app。但是，一个发布的app绝不能仍然设置此属性值是true，这样将导致app的敏感信息很容易被泄露。
+
+在应用程序发布之前，请确保将 =android：debuggable= 属性设置为false。
+#+BEGIN_QUOTE
+android:debuggable="false"
+#+END_QUOTE
+
+** DRD15-J. Consider privacy concerns when using Geolocation API
+=Geolocation API= 是由W3C制定的，它允许web浏览器访问用户设备的地理位置信息。
+
+在该规范中，禁止用户代理在未经用户许可的情况下向网站发送位置信息。
+
+** DRD25. To request user permission for OAuth, identify relying party and its permissions scope
+要向服务提供商请求OAuth用户的信息权限，请向用户显示一个对话框，该对话框标识依赖方信息及其权限范围。
+
+** DRD26-J. For OAuth, use a secure Android method to deliver access tokens
+对于OAuth，使用安全的Android方法来传递访问令牌。在OAuth 1.0或OAuth 2.0标准中没有指定使用移动应用程序及其平台的方法。如果服务提供者能够使用全局惟一标识符识别接收方，则可以安全地传递访问令牌。
+

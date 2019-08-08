@@ -1,0 +1,112 @@
+* Rule 03. WebView (WBV) 
+** DRD02-J. Do not allow WebView to access sensitive local resource through file scheme
+=WebView= 类展示web页面作为activity布局的一部分。 =WebView= 对象的行为能被使用 =WebSettings= 对象进行自定义，它能被获得从 =WebView.getSettings()= 。
+
+=WebView= 的主要安全关注点是 =setJavaScriptEnabled()= ， =setPluginState()=  ， =setAllowFileAccess()= 等方法。
+
+
+**** setJavaScriptEnabled()
+=setJavaScriptEnabled()= 告诉WebView启用JavaScript。 设置它为true： =webview.getWebSettings().setJavaScriptEnabled(true);= ，默认是false。
+
+**** setPluginState()
+=setPluginState（）= 方法告诉WebView启用，禁用或按需启用插件。
+| ON        | 任何对象都将被加载，即使插件不存在来处理内容                      |
+| ON_DEMAND | 如果有一个可以处理内容的插件，则会在用户点击占位符之前显示一个占位符。一旦点击，该插件将在页面上启用 |
+| OFF       | 所有插件将被关闭，并且将使用任何后备内容                          |
+默认是OFF。
+
+**** setAllowFileAccess()
+=setAllowFileAccess()= 方法启用或禁用WebView中的文件访问。默认是true。
+
+**** setAllowContentAccess()
+=setAllowContentAccess（）= 方法启用或禁用WebView中的内容URL访问。内容URL访问允许WebView从系统中安装的content provider加载内容。默认是true。
+
+**** setAllowFileAccessFromFileURLs()
+设置在文件方案URL的上下文中运行的JavaScript是否应该被允许访问来自其他文件方案URL的内容。为了严格限制，因此安全策略应该禁用此设置。 *注意* ： 这个值的设置将被忽略，如果 =getAllowUniversalAccessFromFileURLs()= 是true。
+
+在API level 15及以下，这个值默认是true。在API level 16及以上，这个值模式是false。
+
+**** setAllowUniversalAccessFromFileURLs()
+设置在文件方案URL的上下文环境中运行的JavaScript是否应该被允许访问来自任何源的内容。这包括对来自其他文件方案url的内容的访问。  /其他和上面一样/ 。
+
+**** WebView类的安全问题
+当一个activity中嵌入了WebView来显示web页面时，任何应用程序都可以创建并发送一个带有给定URI的Intent对象来请求该activity，以请求显示一个web页面。
+
+WebView可以识别各种方案，包括 =file:= 方案。恶意应用可以创建并存放一个精心构造的文件在本地存储区，设置其访问权限为 =MODE_WORLD_READABLE= ，并且发送这个内容的URI到目标activity。目标activity将渲染此内容。
+
+当目标activity（WebView对象）设置启用JavaScript，它可以被滥用来访问目标应用的资源。
+
+Android 4.1 提供了额外的方法控制文件方案的访问： =WebSettings#setAllowFileAccessFromFileURLs= ， =WebSettings#setAllowUniversalAccessFromFileURLs= 。
+
+*** 不合规代码示例
+下面例子中WebView组件启用了JavaScript，并且处理通过Intent传递的任意URI都没有任何验证。
+#+BEGIN_SRC java
+public class MyBrowser extends Activity {
+  @override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+ 
+    WebView webView = (WebView) findViewById(R.id.webview);
+ 
+ 
+    // turn on javascript
+    WebSettings settings = webView.getSettings();
+    settings.setJavaScriptEnabled(true);
+ 
+    String turl = getIntent().getStringExtra("URL");
+    webView.loadUrl(turl);
+  }
+}
+#+END_SRC
+
+**** Proof of Concept
+下面代码展示了怎样利用上面的漏洞
+#+BEGIN_SRC java
+// Malicious application prepares some crafted HTML file,
+// places it on a local storage, makes accessible from
+// other applications. The following code sends an
+// intent to a target application (jp.vulnerable.android.app)
+// to make it access and process the malicious HTML file.
+  
+String pkg = "jp.vulnerable.android.app";
+String cls = pkg + ".DummyLauncherActivity";
+String uri = "file:///[crafted HTML file]";
+Intent intent = new Intent();
+intent.setClassName(pkg, cls);
+intent.putExtra("url", uri);
+this.startActivity(intent);
+#+END_SRC
+
+*** 合规方案
+任何通过Intent接收到的信任边界外的URI都应该被验证，在WebView渲染之前。例如，下面的代码检查接收到的URI，当它不是 =file:= 方案URI时才使用它。
+#+BEGIN_SRC java
+String intentUrl = getIntent().getStringExtra("url");
+String localUrl = "about:blank";
+if (!intentUrl.startsWith("file:")) {
+  loadUrl = intentUrl;
+}
+#+END_SRC
+
+** DRD13. Do not provide addJavascriptInterface method access in a WebView which could contain untrusted content
+为了与Web页面实现动态交互，Android应用程序允许WebView通过 =WebView.addJavascriptInterface= 接口向Web页面注入Java对象，页面Javascript脚本可直接引用该对象并调用该对象的方法。
+在Android 4.1 =JELLY_BEAN=  及以下版本，WebView使用WebKit浏览器引擎，并未正确限制 =addJavascriptInterface= 的使用方法，在应用权限范围内，攻击者可以通过Java反射机制实现任意命令执行。
+
+*** 合规方案 #1
+兼容代码可以避免调用 =addJavascriptInterface()= 方法。
+#+BEGIN_SRC java
+WebView webView = new WebView(this);
+setContentView(webView);
+...
+#+END_SRC
+
+*** 合规方案 #2
+在manifest文件指定API level 17及以上。在这个级别中，可以通过在注入类中为可调用的方法添加 =@JavascriptInterface= 注解，无注解的方法将不能再被调用。
+
+** DRD22. Do not cache sensitive information
+被缓存的信息可能被其他应用访问，如果设备被第三方发现被被盗，则肯定会变得可访问。四种情况缓存信息可导致敏感信息被泄露。
+1. 缓存Web应用程序数据可能会导致URL历史记录，HTTP标头，HTML表单输入，Cookie和其他基于Web的数据被泄露；
+2. 用户通过键盘输入的词汇存储在Android用户字典中，以供将来自动校正。用户词典对任何应用程序都是可用的，无需任何许可权限，这可能导致敏感数据被泄露；
+3. 应用程序可能会缓存应用程序完成后仍可用的相机图片；
+4. 应用程序屏幕保留在内存中，使事务历史记录能被任何访问此设备的人查看。
+

@@ -1,0 +1,18 @@
+* Rule 06.Cryptography(CRP)
+** DRD17-J. Do not use the Android cryptographic security provider encryption default for AES
+Android的加密API默认使用了不安全的AES加密方法：AES的ECB分组加密模式。
+
+*注意* ：Java的AES加密也默认使用的ECB分组加密模式。
+
+** DRD18. Do not use the default behavior in a cryptographic library if it does not use recommended practices
+Android中的加密库的缺省行为没有使用最佳实践。例如，DRD17-J。
+
+下面的规则应该要满足：
+1. 不使用ECB加密模式；
+2. 不使用非随机的IV在CBC加密中；
+3. 不使用常量作为加密密钥；
+4. 不使用常量的盐值在PBE中；
+5. 不使用少于1000次的迭代在PBE中；
+6. 不使用静态种子在 =SecureRandom()= 。
+
+

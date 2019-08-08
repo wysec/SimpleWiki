@@ -1,0 +1,225 @@
+
+
+** 环境
+
+- UnCrackable-Level2.apk
+- Frida 12.6.11
+
+** 分析apk
+
+1. [@1] 安装并允许此apk，发现启动后会提示“Root detected!”，点击OK后应用就退出了。
+
+2. [@2] 使用jeb打开此apk文件，搜索上面的字符串并转到对应的代码处。发现应用有进行root检测，代码如下：
+#+BEGIN_SRC java
+if((b.a()) || (b.b()) || (b.c())) {
+    this.a("Root detected!");
+}
+#+END_SRC
+进入 ~b.a()~ ，~b.a()~ ，~b.a()~ 这三个函数中，可以看到进行root检测的代码。
+#+BEGIN_SRC java
+public class b {
+    public static boolean a() {
+        String[] v0 = System.getenv("PATH").split(":");
+        int v1 = v0.length;
+        int v3;
+        for(v3 = 0; v3 < v1; ++v3) {
+            if(new File(v0[v3], "su").exists()) {
+                return 1;
+            }
+        }
+
+        return 0;
+    }
+
+    public static boolean b() {
+        String v0 = Build.TAGS;
+        boolean v0_1 = v0 == null || !v0.contains("test-keys") ? false : true;
+        return v0_1;
+    }
+
+    public static boolean c() {
+        String[] v0 = new String[]{"/system/app/Superuser.apk", "/system/xbin/daemonsu", "/system/etc/init.d/99SuperSUDaemon", "/system/bin/.ext/.su", "/system/etc/.has_su_daemon", "/system/etc/.installed_su_daemon", "/dev/com.koushikdutta.superuser.daemon/"};
+        int v1 = v0.length;
+        int v3;
+        for(v3 = 0; v3 < v1; ++v3) {
+            if(new File(v0[v3]).exists()) {
+                return 1;
+            }
+        }
+
+        return 0;
+    }
+}
+#+END_SRC
+根据此代码的检测方法，可以通过hook这三个函数并设置都返回false即可。Hook代码如下：
+#+BEGIN_SRC javascript
+Java.perform(function () {
+    var bClass = Java.use("sg.vantagepoint.a.b");
+    bClass.a.implementation = function () {
+        return false;
+    };
+    bClass.b.implementation = function () {
+        return false;
+    };    
+    bClass.c.implementation = function () {
+        return false;
+    };
+});
+#+END_SRC
+执行命令 ~frida -U -f owasp.mstg.uncrackable2 -l uncrackable2.js~ ，可以看到就没有root检测的提示了。在输入框中输入任意字符串并点击验证，提示“Nope”，输入不正确。
+
+3. [@3] 在jeb中查询上面提示的字符串并转入代码处，进行输入验证的代码如下。
+#+BEGIN_SRC java
+public void verify(View arg4) {
+    String v4 = this.findViewById(2131165237).getText().toString();
+    AlertDialog v0 = new AlertDialog$Builder(((Context)this)).create();
+    if(this.m.a(v4)) {
+        v0.setTitle("Success!");
+        v4 = "This is the correct secret.";
+    }
+    else {
+        v0.setTitle("Nope...");
+        v4 = "That\'s not it. Try again.";
+    }
+
+    v0.setMessage(((CharSequence)v4));
+    v0.setButton(-3, "OK", new DialogInterface$OnClickListener() {
+        public void onClick(DialogInterface arg1, int arg2) {
+            arg1.dismiss();
+        }
+    });
+    v0.show();
+}
+#+END_SRC
+根据此代码可知是 ~this.m.a()~ 函数进行检查的，进入此函数处，代码如下：
+#+BEGIN_SRC java
+public boolean a(String arg1) {
+    return this.bar(arg1.getBytes());
+}
+
+private native boolean bar(byte[] arg1) {
+}
+#+END_SRC
+可以看出实际是bar()这个native函数进行的检查操作。
+
+4. [@4] 使用IDA打开libfoo.so文件。在导出函数中可以发现 ~Java_sg_vantagepoint_uncrackable2_CodeCheck_bar~ 函数就是实际执行检查的函数。进入代码处，F5查看C伪代码。
+#+BEGIN_SRC c
+signed int __fastcall Java_sg_vantagepoint_uncrackable2_CodeCheck_bar(int a1, int a2, int a3)
+{
+  int v3; // r8
+  int v4; // r5
+  int v5; // r4
+  const char *v6; // r8
+  signed int result; // r0
+  char s2[4]; // [sp+4h] [bp-2Ch]
+  int v9; // [sp+1Ch] [bp-14h]
+  int v10; // [sp+20h] [bp-10h]
+
+  v10 = v3;
+  v4 = a1;
+  v5 = a3;
+  if ( byte_400C == 1 )
+  {
+    strcpy(s2, "Thanks for all the fish");
+    v6 = (const char *)(*(int (__fastcall **)(int, int, _DWORD))(*(_DWORD *)a1 + 736))(a1, a3, 0);
+    if ( (*(int (__fastcall **)(int, int))(*(_DWORD *)v4 + 684))(v4, v5) == 23 && !strncmp(v6, s2, 0x17u) )
+      goto LABEL_6;
+  }
+  result = 0;
+  while ( _stack_chk_guard != v9 )
+LABEL_6:
+    result = 1;
+  return result;
+}
+#+END_SRC
+其实通过此代码就可以看到Secret String应该是Thanks for all the fish。通过strncmp函数比较输入字符串是否和此字符串相同。根据分析，这里可以有几个思路。
+#+BEGIN_QUOTE
+- 直接使用发现的字符串；
+- Hook此函数并设置返回值始终为ture，这样不论输入什么字符串都提示成功;
+- Hook strncmp函数，获取s2的值；
+#+END_QUOTE
+此处采取最后一个方法。
+
+5. [@5] 使用以下代码来hook libfoo.so文件的导入函数strncmp。
+#+BEGIN_SRC javascript
+var strncmp = undefined;
+var imports = Module.enumerateImportsSync("libfoo.so");
+for(var i = 0; i < imports.length; i++) {
+if(imports[i].name == "strncmp") {
+        strncmp = imports[i].address;
+        console.log("strncmp addr: "+strncmp);
+        break;
+    }
+}
+#+END_SRC
+但在执行时发现没有任何信息，根据分析知道应该是应用刚启动时此so文件还未加载，所以就没有hook到。对于此情况可以:1.使用延迟hook的方法；2.在应用运行后再attach。对于方法2，此app中有个init的native方法会进行hook检查，所以不能成功。因此使用延迟hook。
+#+BEGIN_SRC javascript
+setImmediate(function() {
+    //延迟5秒调用Hook方法
+    setTimeout(test, 5000);
+});
+
+function test(){
+    var strncmp = undefined;
+    var imports = Module.enumerateImportsSync("libfoo.so");
+    for(var i = 0; i < imports.length; i++) {
+    if(imports[i].name == "strncmp") {
+            strncmp = imports[i].address;
+            console.log("strncmp addr: "+strncmp);
+            break;
+        }
+    }
+}
+#+END_SRC
+这样可以得到strncmp函数的基地址，那么通过hook就可以得到函数的3个参数，但只是参数的地址信息，还要进行处理。
+
+由于Java中的字符串不会以空字符终止。当我们使用Frida的Memory.readUtf8String方法访问strncmp字符串指针的内存位置，并且不提供长度时，Frida会期望一个终止符，否则会输出一些内存垃圾。因为它不知道字符串在哪里结束。因此我们要指定读取的字符数量作为第二个参数。
+
+如果我们没有限制转储strncmp参数的条件，我们会得到很多输出。所以我们只输出strncmp中当第三个参数的参数size_t为23且第一参数的字符串指针指向我们在输入框输入的01234567890123456789012这个字符串作为过滤条件。如果不这样也可以用hexdump输出，但这会输出很多内容。
+
+最后，完整的hook脚本程序如下：
+#+BEGIN_SRC javascript
+// Hook java function
+Java.perform(function () {
+    var bClass = Java.use("sg.vantagepoint.a.b");
+    bClass.a.implementation = function () {
+        return false;
+    };
+    bClass.b.implementation = function () {
+        return false;
+    };    
+    bClass.c.implementation = function () {
+        return false;
+    };
+});
+
+// Hook native function
+setImmediate(function() {
+    //延迟5秒调用Hook方法
+    setTimeout(test, 5000);
+});
+
+function test(){
+    var strncmp = undefined;
+    var imports = Module.enumerateImportsSync("libfoo.so");
+    for(var i = 0; i < imports.length; i++) {
+    if(imports[i].name == "strncmp") {
+            strncmp = imports[i].address;
+            console.log("strncmp addr: "+strncmp);
+            break;
+        }
+    }
+
+    Interceptor.attach(strncmp, {
+        onEnter: function (args) {
+                if(args[2].toInt32() == 23 && Memory.readUtf8String(args[0],23) == "01234567890123456789012") {
+                console.log("[*] Secret string at " + args[1] + ": " + Memory.readUtf8String(args[1],23));
+                }
+        },
+        onLeave: function (retval) {
+        }
+    });
+}
+#+END_SRC
+** 参考
+[[https://www.4hou.com/technology/4584.html][Android APP破解利器Frida之反调试对抗]]

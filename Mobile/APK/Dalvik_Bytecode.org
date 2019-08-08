@@ -1,0 +1,265 @@
+# -*- Mode: Org -*-
+#+TITLE:       Dalvik Bytecode
+#+AUTHOR: WANGYANG
+#+DATE:      2017-06-13
+#+STARTUP: indent
+#+OPTIONS: \n:t
+
+* Dalvik寄存器
+Dalvik字节码是专门为Dalvik VM设计的一种指令集。和Java虚拟机不同的是， _Java虚拟机是基于堆栈设计的，而Dalvik虚拟机是基于寄存器的_ 。 _Dalvik字节码能使用65536个虚拟寄存器，每个寄存器32位，以相邻的两个寄存器表示64位数据，最终所有的寄存器都会被映射到真实的物理寄存器上_ 。
+
+** 虚拟机寄存器
+Dalvik最多支持65536个寄存器(编号从0~65535),但是在ARM架构的CPU中只存在 *37* 个寄存器。对于这种情况，Dalvik中的寄存器是虚拟寄存器, 通过映射真实的寄存器来实现。每个Dalvik维护了一个调用栈，该调用栈就是用来支持虚拟寄存器和真实寄存器相互映射的，在执行具体函数时，Dalvik会根据.registers指令来确定该函数要用到的寄存器数目。
+
+** 寄存器使用规则
+对于一个使用m个寄存器（m=局部变量寄存器个数x+参数寄存器个数y）的方法而言，局部寄存器使用从v0开始的x个寄存器，而参数寄存器则使用最后的y个寄存器。举个例子说明假设某方法test()一共使用了5个寄存器：0、1、2、3、4，那么局部变量寄存器使用0，1这两个寄存器，参数寄存器是使用2、3、4这三个寄存器。
+
+** 寄存器的命名
+寄存器有两种不同的命名方法：v字命名法和p字命名法。这两种命名法仅仅是影响了字节码的可读性。
+
+*** v字命名法
+=以小写字母v开头的方式表示方法中使用的局部变量和参数。= 
+
+对于上面实例方法test来说，v0、v1为局部变量能够使用的寄存器；v2、v3、v4为参数能够使用的寄存器。
+
+*** p字命名法
+=以小写字母p开头的方式表示参数，参数名称从p0开始，依次增大。局部变量能够使用的寄存器仍然是以v开头。=
+
+对于上面实例方法test来说，v0、v1为局部变量能够使用的寄存器；p0、p1、p2为参数能够使用的寄存器。
+
+| v命名法 | p命名法 | 寄存器含义                             |
+| v0      | v0      | 第一个局部变量寄存器                   |
+| v1      | v1      | 第二个局部变量寄存器                   |
+| ...     | ...     | 中间的局部变量寄存器依次递增且名称相同 |
+| vM-N    | p0      | 第一个参数寄存器                       |
+| ...     | ...     | 中间的参数寄存器分别依次递增           |
+| vM-1    | pN-1    | 第N个参数寄存器                        |
+
+
+* Dalvik字节码的类型、方法和字段表示方法
+Davilk字节码有一套用于描述类型、方法、字段的方法，这些方法与Davilk虚拟机的指令集一起形成了完整的Dalvik汇编代码。
+
+** 字节码和数据类型
+Dalvik字节码有两种类型： *原始类型* ， *引用类型* （包括对象和数组）。
+
+对于基本类型和无返回值的void类型都是用一个大写字母表示，对象类型则用字母L加对象的全限定名来表示；数组则用[来表示，具体规则如下所示。
+
+#+BEGIN_QUOTE
+*全限定名* ：以String为例，其完整名称是Java.lang.String，那么其全限定名就是java/lang/String;，即java.lang.String的”.”用”/”代替，并在末尾添加分号”;”做结束符。
+#+END_QUOTE
+
+| 类型                                    | 类型描述符 |
+| void(can only be used for return types) | V          |
+| boolean                                 | Z          |
+| byte                                    | B          |
+| short                                   | S          |
+| char                                    | C          |
+| int                                     | I          |
+| long(64 bits)                           | J          |
+| float                                   | F          |
+| double(64 bits)                         | D          |
+| Java类类型                              | L          |
+| 数组类型                                | [          |
+
+
+*** 对象类型
+L可以表示Java类型中的任何类。在Java代码中以 =package.name.ObjectName= 的方式引用，而在Davilk中其描述则是以 =Lpackage/name/ObjectName;= 的形式表示。L即上面定义的Java类类型，表示后面跟着的是类的全限定名。比如Java中的 =java.lang.String= 对应的描述是 =Ljava/lang/String;= 。
+
+*** 数组类型
+[类型用来表示所有基本类型的数组，[后跟着是基本类型的描述符，每一维度使用一个前置的[。比如java中的int[]用汇编码表示便是 =[I;= 。二维数组int[][]为 =[[I;= 。三维数组则表示为 =[[[I;= 。对于对象数组来说，[后跟着对应类的全限定符。比如java当中的String[]对应的是 =[java/lang/String;= 。
+
+** 字段的描述
+Davilk中对字段的描述分为两种，对基本类型字段的描述和对引用类型的描述，但两者的描述格式一样： =对象类型描述符->字段名:类型描述符;=
+比如com.sbbic.Test类中存在String类型的name字段及int类型的age字段,那么其描述为:
+
+#+BEGIN_SRC asm
+Lcom/sbbic/Test;->name:Ljava/lang/String;
+Lcom/sbbic/test;->age:I
+#+END_SRC
+
+** 方法的描述
+Dalvik使用方法名、类型参数、返回值来详细描述一个方法，在Davilk相应的描述规则为： =对象类型描述符->方法名(参数类型描述符)返回值类型描述符=
+下面通过几个例子来说明，以java.lang.String为例，下面几个方法
+
+#+BEGIN_SRC java
+public char charAt(int index){...}
+public void getChars(int srcBegin,int srcEnd,char dst[],int dstBegin){...}
+public boolean equals(Object anObject){...}
+#+END_SRC
+
+其对应的Davilk的描述如下，
+
+#+BEGIN_SRC asm
+Ljava/lang/String;->charAt(I)C
+Ljava/lang/String;->getChars(II[CI)V
+Ljava/lang/String;->equals(Ljava/lang/Object)Z
+#+END_SRC
+
+
+* Dalvik指令集
+** 空操作指令
+空操作指令的助记符为 *nop* ，它的值为00，通常nop指令被用来作对齐代码之用，无实际操作。
+
+** 数据操作指令
+数据操作指令为 *move* ，move指令的原型为move destination,source或move destination。move指令根据字节码的大小与类型不同，后面会跟不同的后缀。
++ =move vA,vB= 将vB寄存器的值赋给vA寄存器，源、目标寄存器都为4位。
++ =move/from16 vAA,vBBBB= 将vBBBB寄存器的值赋给vAA寄存器，源寄存器位16位，目的寄存器为8位。
++ =move/16 vAAAA,vBBBB= 将vBBBB寄存器的值赋给vAAAA寄存器，源寄存器与目的寄存器都为16位。
++ =move-object vA,vB= 为对象赋值，源、目的寄存器都为4位。
++ =move-result vAA= 将上一个invoke类型指令操作的单字非对象结果赋给vAA寄存器。
+
+** 返回指令
+返回指令指函数结尾时运行的最后一条指令。它的基础字节码为 *return* ，有以下几条返回指令。
++ =return-void= 表示函数从一个void方法返回。
++ =return vAA= 表示函数返回一个32位非对象类型的值，返回值寄存器为8位的寄存器vAA。
++ =return-object vAA= 表示函数返回一个对象类型的值，返回值为8位的寄存器vAA。
+
+** 数据定义指令
+数据定义指令用来定义程序中用到的常量、字符串、类等数据。它的基础字节码是 *const* 。
++ =const/4 vA,#+B= 将数值符号扩展为32位后赋给寄存器vA。
++ =const/16 vAA,#+BBBB= 将数值符号扩展为32位后赋给寄存器vAA。
++ =const-wide/16 vAA,#+BBBB= 将数值符号扩展为64位后赋值个寄存器对vAA。
++ =const-string vAA,string@BBBB= 通过字符串索引构造一个字符串并赋给寄存器vAA。
++ =const-class vAA,type@BBBB= 通过类型索引获取一个类引用并赋给寄存器vAA。
+
+** 锁指令
+锁指令多用在多线程程序中对同一对象的操作。Dalvik指令集中有两条锁指令。
++ =monitor-enter vAA= 为指定的对象获取锁。
++ =monitor-exit vAA= 释放指定对象的锁。
+
+** 实例操作指令
+与实例相关的操作包括实例的类型转换、检查及新建等。
++ =check-cast vAA,type@BBBB= 将vAA寄存器中的对象引用转换成指定的类型，如果失败会抛出ClassCastException异常。如果类型B指定的是基本类型，对于非基本类型A来说，运行时始终会失败。
++ =instance-of vA,vB,type@CCCC= 判断vB寄存器中的对象引用是否可以转换成指定的类型，如果可以vA寄存器赋值为1，否则vA寄存器赋值为0。
++ =new-instance vAA,type@BBBB= 构造一个指定类型对象的新实例，并将对象引用赋值给vAA寄存器，类型符type制定的类型不能是数组类。
+
+** 数组操作指令
+数组操作包括获取数组长度、新建数组、数组赋值、数组元素取值等操作。
++ =array-length vA,vB= 获取给定vB寄存器中数组的长度并将值赋给vA寄存器，数组长度指的是数组的条目个数。
++ =new-array vA,vB,type@CCCC= 构造制定类型（type@CCCC）与大小（vB）的数组，并将值赋给vA寄存器。
++ =fill-array-data vAA,+BBBBBBBB= 用指定的数据来填充数组，vAA寄存器为数组引用，引用必须为基础类型的数组，在指令后面会紧跟一个数据表。
+
+** 异常指令
++ =throw vAA= 抛出vAA寄存器中制定类型的异常。
+
+** 跳转指令
+跳转指令用于从当前地址跳转到制定的偏移处。Dalvik指令集中有三种跳转指令：无条件跳转/goto、分支跳转/switch、条件跳转/if。
++ =goto +AA= 无条件跳转到制定偏移处，偏移量AA不能为0。
++ =packed-switch vAA,+BBBBBBBB= 分支跳转指令。vAA寄存器为switch分支中需要判断的值，BBBBBBBB指向一个packed-switch-payload格式的偏移表，表中的值是有规律递增的。
++ =sparse-switch vAA,+BBBBBBBB= 分支跳转指令。vAA寄存器为switch分支中需要判断的值，BBBBBBBB指向一个sparse-switch-payload格式的偏移表，表中的值是无规律的偏移量。
++ =if-test vA,vB,+CCCC= 条件跳转指令，比较vA、vB寄存器的值，如果比较结果满足就跳转到CCCC指定的偏移处，偏移量CCCC不能为0。if-test类型的指令有以下几条：
+  + =if-eq= 如果vA等于vB则跳转。Java语法表示为 if(vA==vB)
+  + =if-ne= 如果vA不等于vB则跳转。Java语法表示为 if(vA!=vB)
+  + =if-lt= 如果vA小于vB则跳转。 Java语法表示为 if(vA<vB)
+  + =if-le= 如果vA小于等于vB则跳转。
+  + =if-gt= 如果vA大于vB则跳转。
+  + =if-ge= 如果vA大于等于则跳转。
+
+=上面两张偏移表packed-switch-payload和spare-switch-payload,两者唯一的区别就是表中的值是否有序。=
+
+** 比较指令
+比较指令用于比较两个寄存器中值的大小，其基本格式格式是 =cmp+kind-type vAA,vBB,vCC= ，type表示比较数据的类型；kind则代表操作类型，因此有cmpl、cmpg、cmp三种比较指令。其中vBB寄存器与vCC寄存器是需要比较的两个寄存器或两个寄存器对，比较结果放到vAA寄存器。
++ =cmpl-float= 比较两个单精度浮点数。如果vBB寄存器大于vCC寄存器，则结果为-1，相等则结果为0，小于的话结果为1。
++ =cmpg-float= 比较两个单精度浮点数。如果vBB寄存器大于vCC寄存器，则结果为1，相等则结果为0，小于的话结果为-1。
++ =cmpl-double= 比较两个双精度浮点数。如果vBB寄存器对大于vCC寄存器对，则结果为-1，相等则结果为0，小于的话结果为1。
++ =cmpg-double= 比较两个双精度浮点数。如果vBB寄存器对大于vCC寄存器对，则结果为1，相等则结果为0，小于的话结果为-1。
++ =cmp-long= 比较两个长整形数。如果vBB寄存器大于vCC寄存器，则结果为1，相等则结果为0，小于则结果为-1。
+
+** 字段操作指令
+字段操作指令表示对对象字段进行设值和取值操作，就像是你在代码中的set和get方法。基本指令是 =iput-type,iget-type,sput-type,sget-type= 。type表示数据类型。
+
+普通字段读写操作，前缀是i的iput-type和iget-type指令用于字段的读写操作。
+
+静态字段读写操作，前缀是s的sput-type和sget-type指令用于静态字段的读写操作。
+
+** 方法调用指令
+方法调用指令负责调用实例的方法。它的基础指令为 *invoke* ，方法调用指令有 =invoke-kind{vC,vD,vE,vF,vG},meth@BBBB= 与 =invoke-kind/range{vCCCC .. vNNNN},meth@BBBB= 两类，两类指令在作用上没有区别，只是后者在设置参数寄存器时使用了range来指定寄存器的范围。
+
+根据方法类型的不同，共有如下五条方法调用指令。
++ =invoke-virtual= 或 =invoke-virtual/range= 调用实例的虚方法。（public、protect方法）
++ =invoke-super= 或 =invoke-super/range= 调用实例的父类方法。
++ =invoke-direct= 或 =invoke-direct/range= 调用实例的直接方法。（静态方法、私有方法、构造方法）
++ =invoke-static= 或 =invoke-static/range= 调用实例的静态方法。
++ =invoke-interface= 或 =invoke-interface/range= 调用实例的接口方法。
+
+在Android 4.0系统中，Dalvik指令集增加了 =invoke-kind/jumbo{vCCCC...vNNNN},meth@BBBBBBBB= 这类指令，它只是在指令中增加了jumbo字节码后缀，且寄存器值与指令的索引取值范围更大。
+
+** 数据转换指令
+数据转换指令用于将一种类型的数值转换为另一种类型。它的格式为 =unop vA,vB= ，vB寄存器或vB寄存器对存放需要转换的数据，转换后结果保持在vA寄存器或vA寄存器对中。
++ =neg-int= 对整型数求补。
++ =not-int= 对整型数求反。
++ =neg-long=
++ =not-long=
++ =neg-float=
++ =neg-double=
++ =int-to-long= 将整型数转换为长整型。
++ =int-to-float= 将整型数转换为单精度浮点型。
++ =int-to-double=
++ =long-to-int=
++ =long-to-float=
++ =long-to-double=
++ =float-to-int=
++ =float-to-long=
++ =float-to-double=
++ =double-to-int=
++ =double-to-long=
++ =double-to-float=
++ =int-to-byte=
++ =int-to-char=
++ =int-to-short=
+
+** 数据运算指令
+数据运算指令包括算术运算指令与逻辑运算指令。
+
+=binop vAA,vBB,vCC= 将vBB寄存器与vCC寄存器进行运算，结果保持到vAA寄存器。
++ =add-int=
++ =sub-int=
++ =mul-int=
++ =div-int=
++ =rem-int=
++ =and-int=
++ =or-int=
++ =xor-int=
++ =shl-int=
++ =shr-int=
++ =ushr-int=
++ =add-long=
++ =sub-long=
++ =mul-long=
++ =div-long=
++ =rem-long=
++ =and-long=
++ =or-long=
++ =xor-long=
++ =shl-long=
++ =shr-long=
++ =ushr-long=
++ =add-float=
++ =sub-float=
++ =mul-float=
++ =div-float=
++ =rem-float=
++ =add-double=
++ =sub-double=
++ =mul-double=
++ =div-double=
++ =rem-double=
+
+
+* Dalvik指令语法约定
+1. 每条指令从操作码开始，后面紧跟参数，参数个数不定，每个参数之间采用逗号分开。
+2. 每条指令的参数从指令第一部分开始，op位于低8位，高8位可以是一个8位的 参数，也可以是两个4位的参数，还可以为空，如果指令超过16位，则后面部分 依次作为参数。
+3. 如果参数采用“vX”的方式表示，表明它是一个寄存器，如v0、v1等。这里采用v而不用r是为了避免与基于该虚拟机架构本身的寄存器命名产生冲突，如ARM 架构寄存器命名采用I开头。
+4. 如果参数采用“#+X”的方式表示，表明它是一个常量数字。
+5. 如果参数采用“+X”的方式表示，表明它是一个相对指令的地址偏移。
+6. 如果参数采用“kind@X”的方式表示，表明它是一个常量池索引值。其中kind表 示常量池类型，它可以是“string”（字符串常量池索引）、“type”（类型常量池索引）、“field”（字段常量池索引）或者“meth”（方法常量池索引）。
+
+例子： =op vAA, string@BBBB= 
+指令用到了 1个寄存器参数vAA，并且还附加了一个字符串常量池索引string@BBBB。
+
+
+* 参考
+https://source.android.com/devices/tech/dalvik/dalvik-bytecode
+
+http://pallergabor.uw.hu/androidblog/dalvik_opcodes.html
+

@@ -1,0 +1,113 @@
+#+HTML_MATHJAX: align: left indent: 5em tagside: left font: Neo-Euler
+
+* 文档结构
+** 标题
+标题定义了大纲树的结构。它以处于一行左边缘的一个或多个星号开头。例如：
+#+BEGIN_EXAMPLE
+ * Top level headline
+ ** Second level
+ *** 3rd level
+     some text
+ *** 3rd level
+     more text
+ 
+ * Another top level headline
+#+END_EXAMPLE
+有几个星号就表示是几级标题。
+
+** 结构编辑
+使用快捷键对标题级别进行设置：
+| M-RET        | 建立同级标题                                       |
+| M-left/right | 提升或降低标题级别。该标题下的相关正文同步调整缩进 |
+| M-up/down    | 调整标题在文档中的位置。连同子标题一起调整位置   |
+
+** 文本列表
+Org能够识别有序列表、无序列表和描述列表。
+- 无序列表项以‘-’、‘+’或者‘*‘开头。
+- 有序列表项以‘1.’、‘1)’或者开头。
+- 描述列表用‘::’将项和描述分开。
+
+快捷键操作：
+| M-RET       | 在现有列表项下创建新的列。非编号的自动创建非编号项，带编号的自动创建新的编号项并自动调整相关编号号码 |
+| M-left/righ | 增加或减少项目的缩进                                                                                 |
+| M-up/down   | 与相同缩进的前面/后面项目交换位置                                                                    |
+
+
+** 脚注
+脚注就是以脚注定义符号开头的一段话，脚注定义符号是将脚注名称放在一个方括号里形成的，要求放在第0列，不能有缩进。而引用就是在正文中将脚注名称用方括号括起来。例如：
+#+BEGIN_EXAMPLE
+The Org homepage[fn:1] now looks a lot better than it used to.
+...
+[fn:1] The link is: http://orgmode.org
+#+END_EXAMPLE
+
+
+* 表格
+当在表格内部输入 TAB、RET 或者 C-c C-c 时表格都会自动调整。TAB 会进入下一个区域（RET 进入下一行）并且创建一个新的行。
+#+BEGIN_EXAMPLE
+| 1 | one |
+| 2 | two |
+#+END_EXAMPLE
+以’|-’开头的一行会作为一个水平分隔行，当它下次调整排列时会将‘-’扩展至填充整行。想要创建表格，只需键入：
+#+BEGIN_EXAMPLE
+|Name|Phone|Age|
+|-
+#+END_EXAMPLE
+然后 TAB 就自动生成表格。还有一个更快的方法就是键入|Name|Phone|Age，再 =C-c RET= 。
+
+
+* 超链接
+** 链接格式
+Org 能够识别 URL 格式的文本并将它们处理成可点击的链接。
+#+BEGIN_EXAMPLE
+[[link][description]]  /  [[link]]
+#+END_EXAMPLE
+
+要想编辑链接，可以光标置于链接上并键入 =C-c C-l= 。
+
+
+* 议程
+
+| C-c a     | agenda                                        |
+| C-c [     | add document to the list of agenda files      |
+| C-c ]     | remove document from the list of agenda files |
+| C-c .     | add date                                      |
+| C-u C-c . | add time and date                             |
+| C-g       | stop doing what you are trying to do, escape  |
+
+
+* Markup for rich export
+** 段落，换行符和引用
+** 强调和等宽
+可以让文字 *bold*, /italic/, _underlined_, =verbatim= and ~code~ ，如果需要，也可以 +strike-through+ 。代码和逐文本的字符串不会以Org模式的语法格式来处理，会被逐字输出。
+
+** 嵌入 LaTex
+
+#+begin_src latex
+\begin{equation}
+x=\sqrt{b}
+\end{equation}
+#+end_src
+
+$a^2 + b^2 = c^2$
+
+\(a^2 + b^2 = c^2\)
+
+$$a^2 + b^2 = c^2$$
+
+\[a^2 + b^2 = c^2\]
+
+
+If $a^2=b$ and \( b=2 \), then the solution must be
+either $$ a=+\sqrt{2} $$ or \[ a=-\sqrt{2} \].
+
+
+
+* 参考资料
+[[https://orgmode.org/worg/org-tutorials/org4beginners.html#orge4f47e3][Org mode beginning at the basics]]  
+
+[[https://orgmode.org/guide/][The compact Org-mode Guide]]
+
+[[http://www.cnblogs.com/Open_Source/archive/2011/07/17/2108747.html#sec-4-1][Org-mode 简明手册]]
+
+[[https://blog.csdn.net/csfreebird/article/details/43636615][org mode 使用latex]]

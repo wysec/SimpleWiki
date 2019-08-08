@@ -1,0 +1,12 @@
+* Rule 04. Network - SSL/TLS (NET)
+** DRD19. Properly verify server certificate on SSL/TLS
+Android app使用SSL/TLS协议进行安全的通信，应该恰当的验证服务器证书。基本的验证要求包括：
++ 验证X.509证书的主题（CN）和URL匹配
++ 验证证书是由可行CA签署的
++ 验证签名是正确的
++ 验证证书是未过期的
+
+** DRD23-J. Do not use loopback when handling sensitive data
+Loopback，就是连接网络通信到 =localhost= 端口。不要在处理敏感数据时使用它。 =localhost= 端口能被此设备上的其他应用访问，所以他们的使用能导致敏感数据被泄露。相反，应该使用安全的Android IPC机制，如使用 =HttpsURLConnection= 类或者 =SSLSocket= 类。
+
+同样的，安全通信不应该被绑定到INADDR_ANY端口，因为这将导致应用程序能够在任何地方接收请求。

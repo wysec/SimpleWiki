@@ -1,0 +1,271 @@
+
+
+
+* 开始
+
+** 主要安全活动
+*** 制定安全计划
+**** 描述
+在开始阶段就需要注意的：
+-	识别系统开发的关键角色；
+-	识别安全要求的源，如：相关法律、法规和标准；
+-	确保所有关键干系人有共同的理解，包括安全含义、考虑和要求；
+-	概述关键安全里程碑的初步想法，包括时间框架或发出触发信号的安全措施即将到来。
+
+这种早期的参与将使开发人员能够将安全需求和相关约束条件规划到项目中。它还提醒项目领导人，随着项目的继续，许多决策都会产生安全影响，因此应适当权衡。
+
+*Identification of Security Roles*
+
+ISSO（Information System Security Officer）的识别是一个重要的步骤，应该考虑到个体将投入到这项任务的时间、执行任务所需的技能以及个人必须有效地履行职责的能力。
+
+在过程早期识别ISSO提供了在过程早期做出的基于风险的决策的个人关键见解，并提供其他团队成员访问ISSO以支持将安全性集成到系统开发中。
+
+*Stakeholder Security Integration Awareness*
+
+ISSO为企业所有者和开发人员提供了对安全步骤、要求和期望的早期理解，因此确保了可以从一开始就能计划安全。
+
+**Initial Project Planning**
+为开发项目进度安排中集成的安全里程碑制定初始项目大纲将允许在发生变化时进行适当的规划。 在这个阶段，活动可能更多地依靠安全活动的决策。
+
+**** 实施提示
+-	在启动阶段的安全规划应该包括整个系统生命周期的准备工作，包括关键安全里程碑和可交付成果，以及工具和技术的识别。应特别考虑可能需要采购的项目（例如测试/评估工具）。
+-	许多项目启动工件（会议记录，简报，角色标识）可以标准化并提供给开发人员进行适当的工作量计划。
+-	面对面的会议可以让与会者有机会衡量理解和意识。
+-	如果该机构针对多个系统确定了相同的ISSO个体，则有计划的方法将提高其多进程能力，例如分配具有所有权的通用系统或普通组织。
+-	在开发生命周期的早期咨询相关机构，以确保遵守适用的法律和机构政策。
+
+
+*** 信息系统分类
+**** 描述
+Security categorization是将安全集成到组织业务和信息技术管理功能，以及建立信息系统安全标准基础的重要步骤。Security categorization首先要确定那些信息支持组织的那些业务线。 后续步骤则着重于在保密性，完整性和可用性方面的安全评估。其结果是要确保任务、信息、信息系统有恰当的信息安全控制措施。
+
+对组织的信息或信息系统分类可以参考FIPS 199、NIST SP 800-60。
+
+安全分类标准和指南帮助组织为信息系统采取恰当的安全控制措施。
+
+**** 实施提示
+
+*** 评估业务影响
+**** 描述
+对业务线的系统影响评估将系统组件和提供的关键业务服务相关联。该信息用于表征系统组件中断时的业务和任务后果。这帮助系统干系人在早期进行关键IT和安全的决策。
+
+可参考NIST SP 800-34。
+
+**** 实施提示
+- 从original business case获取最初原始的信息。
+- 举行干系人参加的会议，通过头脑风暴等方式讨论可能的联系和影响。
+- 可以重用其他工作的数据和信息。
+- BIA的结果也可以用于开发与服务提供商的SLA要求或目标
+
+*** 评估隐私影响
+**** 描述
+当开发一个新系统时，考虑系统是否会产生、传输、存储隐私信息是非常重要的。这通常在识别信息类型时在安全分类过程中被识别。一旦确定系统会处理隐私信息，那么就需要针对性的实施恰当的控制措施。
+
+一般采用一步或两步模型来处理隐私问题。一步模型要求对所有系统都开发隐私影响评估，概述隐私信息确定的标准，并记录用于正确保护信息的安全控制措施。而两步模型通过阈值分析来处理并区分所有系统，以此来决定是否应该执行隐私影响评估。如果需要则要对隐私数据执行更详细的评估并制定恰当的安全控制措施。
+
+**** 实施提示
+- 隐私信息治理：Privacy Act of 1974, 5 U.S.C. § 552A
+- The E-Government Act of 2002加强了the Privacy Act of 1974对隐私保护的要求。
+- The September 29, 2003, OMB Memorandum
+- OMB M-06-16 和 OMB M-07-17.
+
+*** 确保使用安全的信息系统开发过程
+**** 描述
+在早期阶段，应用程序安全性的主要责任在于开发团队，他们对应用程序的详细工作方式有最深入的了解，并能够识别功能行为和业务流程逻辑中的安全缺陷。他们是建立安全第一级防御的机会。
+
+一些考虑的要点：
+- Secure Concept of Operations (CONOPS) for Development
+- Standards and Processes
+- Security Training for Development Team
+- Quality Management
+- Secure Environment
+- Secure Code Practices and Repositories
+
+**** 实施提示
+- 相关人员了解现代应用程序的安全缺陷和攻击方法对于保护系统免受攻击至关重要。
+- 应尽快解决开发团队所知的任何漏洞
+- 为减少系统中安全性缺陷的可能性，应调查遇到的问题及处理方案，将其整理成最佳实践，并整合到已有的编码标准或开发指南中。
+
+
+* 开发/采购
+** 描述
+此阶段的关键安全活动包括：
+- 进行风险评估并使用结果来补充基线安全控制；
+- 分析安全要求；
+- 执行功能和安全测试；
+- 准备系统C&A的初始文档；
+- 设计安全架构；
+
+** 主要安全活动
+*** 评估系统风险
+**** 描述
+The purpose of a risk assessment is to evaluate current knowledge of the system’s design, stated requirements, and minimal security requirements derived from the security categorization process to determine their effectiveness to mitigate anticipated risks
+
+**** 实施提示
+
+- 在任何组织中，来自内部的威胁发生的可能性最高。
+- 监控系统中组件的漏洞情况是个好方法，可以通过NVD、CWE。
+- 在处理具有多个所有者（有时跨越不同域）的系统时，识别和解决共享和继承的风险非常重要。
+- 应理解和评估供应链的风险。
+
+*** 选择和记录安全控制措施
+**** 描述
+安全控制措施的选择包括3个活动：
+- the selection of baseline security controls (including common security controls)
+- the application of security control tailoring guidance to adjust the initial security control baseline
+- the supplementation of the tailored baseline with additional controls based on an assessment of risk and local conditions
+
+An organization-wide view is essential in the security control selection process to ensure that adequate risk mitigation is achieved for all mission/business processes and the information systems and organizational infrastructure supporting those processes.
+
+The security control selection process should include an analysis of laws and regulations, such as FISMA, OMB circulars, agency-enabling acts, agency-specific governance, FIPS and NIST Special Publications etc.
+
+In each situation, a balance should exist between the system security benefits to mission performance and the risks associated with operation of the system.
+
+**** 实施提示
+- Addressing security requirements in a matrix format allows the developers and security engineers to review implementation per major system component and can facilitate gap analysis, ensuring proper risk analysis and control implementation
+- Information security requirements should be stated in specific terms.
+- Any new functional requirement may have security implications.
+- If a documented requirement exists, then it is assumed that a test case will need to be developed and executed.
+- Security controls are not one-dimensional and should be addressed as appropriately on multiple components throughout the system. （比如系统有数据库、中间件、Web服务器等，那么都应该制定恰当的安全控制措施）
+- Agencies should initiate disposition planning during this phase and plan for disposal/transition throughout all phases of the life cycle. 
+
+*** 安全架构设计
+**** 描述
+At the system level, security should be architected and then engineered into the design of the system. This may be accomplished by zoning or clustering services either together or distributed for either redundancy or additional layers of protection. Security designing at the system level should take into consideration services obtained externally, planned system interconnections, and the different orientations of system users (e.g., customer service versus system administrators).
+
+Another example would be a system auditing strategy that should be developed to enable an accurate trace or reconstruction of all priority and high-risk work flows. The audit strategy should include various audit records from several different components including (but not limited to) the Web application, databases, mainframe, and Web servers. The goal should not be to capture as much audit information as possible but to capture only what is needed to provide enough information to investigate potential security breaches and system failures
+
+**** 实施提示
+- Security architecting can provide effective compensating controls when there are issues with implementing minimal security requirements with the system’s design specification
+- Demonstrating the logic behind the security of this system will help in determining the need for additional controls.
+- Risks accepted by the system that may have downstream, adverse affects on the enterprise can be identified and raised as issues during the architectural review. 
+
+*** Engineer in Security and Develop Controls
+**** 描述
+Applying security controls in development should be considered carefully and planned logically.
+
+
+*** Develop Security Documentation
+**** 描述
+While the most prominent document is the System Security Plan,documentation supporting it may include:
+- Configuration management plan
+- Contingency plan (including a Business Impact Assessment)
+- Continuous monitoring plan
+- Security awareness, training and education (SATE) plan
+- Incident response plan
+- Privacy impact assessment (PIA)
+
+*** Conduct Testing (Developmental, Functional and Security)
+**** 描述
+测试的目标是要确保开发的系统满足功能和安全的要求。
+
+**** 实施提示
+- it is recommended that functional test plans include general security features testing (to the greatest extent possible)
+- Preliminary testing of basic security controls during functional testing may reduce or eliminate issues earlier in the development cycle. Preliminary testing is considered development-level testing, not certification and accreditation (C&A) testing but if no changes occur, reuse test results to the maximum extent possible in the C&A.
+- For systems of high visibility and sensitivity, independent development testing may be recommended
+- Preliminary testing may be done at component or security zone level to ensure that each component or security zone is secure as an entity
+- Capture the process and results of all security testing that occurs throughout the life cycle for evaluation, issue identification, and potential reuse
+- Source code should be periodically reviewed using automated tools or manual spot check for common programming errors that have a detrimental impact on system security
+
+
+* 实施/评估
+** 描述
+在此阶段，系统将被评估并安装到组织的生产环境。
+
+此阶段的关键活动包括：
+- Integrate the information system into its environment;
+- Plan and conduct system certification activities in synchronization with testing of security controls; and
+- Complete system accreditation activities.
+
+** 主要安全活动
+*** 创建详细的C&A计划
+**** 描述
++了解风险情况，评估风险对系统的影响，确定风险接受的程度。+
+**** 实施提示
+- Holding a planning session or completing a preliminary project plan four - six weeks prior to testing will allow enough time to obtain resources and plan appropriately    
+- Holding a quick initial review of the certification package will help bring to light potential challenges
+- Active testing will impact development and should be planned well ahead of this meeting.
+- Involving the AO in the planning process as early as possible (even in phase 1) will establish expectations for C&A and eliminate surprises prior to reaching the C&A control gate.
+
+*** 将安全性集成到已建立的环境或系统中
+**** 描述
+When the information system is to be deployed for operation. Security control settings are enabled in accordance with manufacturers’ instructions, available security implementation guidance, and documented security specification.
+**** 实施提示
+- Clean out test and development environment to ensure that all test data is removed.
+- Extreme care should be exercised when integrating information systems into operational environments or systems so that critical operations are not disrupted.
+
+*** 评估系统安全性
+**** 描述
+The objective of the security assessment process is to validate that the system complies with the functional and security requirements and will operate within an acceptable level of residual security risk. Testing of security controls is based on the assessment procedures detailed in NIST SP 800-53A。
+Prior to initial operations, a security certification must be conducted to assess the extent to which the controls are implemented, operating as intended, and producing the desired outcome with respect to meeting the security requirements for the system。
+**** 实施提示
+- All documents should be in final state for review to ensure a current picture of the system at review time.
+- Clearly articulating the C&A process to all parties and agreeing on the level of rigor and scope of testing are very important in ensuring a smooth certification effort.
+- Prioritize continuous monitoring by risk and cost-effectiveness.
+- Reuse as many prior and relevant assessment results as possible.
+
+*** 授权信息系统
+**** 描述
+This authorization is based on the verified effectiveness of security controls to some agreed-upon level of assurance and an identified residual risk to agency assets or operations (including mission, function, image, or reputation).
+**** 实施提示
+Authorizing officials need to make risk decisions not only for the information system, but for the risk extended to the organization as a whole by placing the system into operation
+
+
+* 运行和维护
+
+** 主要安全活动
+*** 检查运营准备情况
+**** 描述
+Many times when a system transitions to a production environment, unplanned modifications to the system occur. If changes are significant, a modified test of security controls, such as configurations, may be needed to ensure the integrity of the security controls（此步骤可选）
+**** 实施提示
+- When an application is enhanced or changed, regression testing helps to ensure that additional vulnerabilities have not been introduced.
+- Changes that include additional data fields should be noted and analyzed to determine if the security posture of the system has degraded or introduced a need for additional controls.
+- Ensure users are adequately trained on security awareness and practices for the new IT system prior to deploying the system in a production environment.
+
+*** 配置管理和控制
+**** 描述
+Documenting information system changes and assessing the potential impact on the security of the system on an ongoing basis is an essential aspect of maintaining the security accreditation.
+**** 实施提示
+- The reviewer should keep in mind any changes that would directly or indirectly impact confidentiality, integrity, and availability
+- Some system enhancements that add new data may require a review of impact to the system security categorization and associated security controls
+- 紧急情况应被识别，应尽可能进行全面审查。
+
+*** 进行持续监控
+**** 描述
+The ultimate objective of continuous monitoring is to determine if the security controls in the information system continue to be effective over time in light of the inevitable changes that occur in the system as well as the environment in which the system operates
+**** 实施提示
+- Agencies should strive to implement a cost-effective continuous monitoring program
+- 根据情况尽量监控所有安全控制措施
+- Continuous monitoring processes should be evaluated periodically to review changes in threats and how this could affect the ability of controls to protect a system.
+- Prioritize continuous monitoring by importance of control to mitigating risk, validation of POA&M items that become closed, and single control points of failure.
+ 
+
+* 处置
+** 主要安全活动
+*** 建立并执行处置/过渡计划
+**** 描述
+制定处置/过渡计划可确保所有利益相关方了解系统及其信息的未来计划。此计划应考虑所有重要组件、服务、信息的处置/过渡状态。
+
+与工作计划非常相似，该计划确定了正确关闭，转换或迁移系统或其信息所需的必要步骤，决策和里程碑。
+
+**** 实施提示
+- Do not wait for the disposal phase to make a disposal/transition plan. This is best done as part of the requirements phase so full resource requirements for disposal/transition are understood and planned for.
+
+*** Ensure Information Preservation
+**** 描述
+When preserving information, organizations should consider the methods that will be required for retrieving information in the future. The technology used to retrieve the records may not be readily available in the future (particularly if encrypted). Legal requirements for records retention must be considered when disposing of systems.
+
+*** Sanitize Media
+可以参考NIST SP 800-53，NIST SP 800-88
+
+Several factors should be considered along with the security categorization of the system confidentiality when making sanitization decisions. The cost versus benefit of a media sanitization process should be understood prior to a final decision. For instance, it may not be cost-effective to degauss inexpensive media such as diskettes.
+
+*** Dispose of Hardware and Software
+Hardware and software can be sold, given away, or discarded as provided by applicable law or regulation. The disposal of software should comply with license or other agreements with the developer and with government regulations. There is rarely a need to destroy hardware except for some storage media that contains sensitive information and that cannot be sanitized without destruction. In situations when the storage media cannot be sanitized appropriately, removal and physical destruction of the media may be possible so that the remaining hardware may be sold or given away. Some systems may contain sensitive information after the storage media is removed. If there is doubt whether sensitive information remains on a system, the ISSO should be consulted before disposing of the system. Also, the vendor may be consulted for additional disposal options or verification of risk.
+
+*** Closure of System
+**** 描述
+The information system is formally shut down and disassembled at this point.
+
+**** 实施提示
+A memorandum articulating formal system closure and proper action taken that includes in the distribution all key stakeholders provides the simplest approach to formal closure.

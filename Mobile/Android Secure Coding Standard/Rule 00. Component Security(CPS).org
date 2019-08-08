@@ -1,0 +1,90 @@
+* Rule 00. Component Security(CPS) /组件安全
+** DRD01-X.Limit the accseeibility of an app's sensitive content provider/
+
+=ContentProvider= 类提供了一种管理和与其它应用程序共享数据的机制。当共享一个提供者（provider）的数据与其他应用程序时，应仔细实施访问控制，以禁止未经授权的访问敏感数据。
+
+有3种方法限制对 _内容提供者_ （content provider）的访问：
++ Public
++ Private
++ Restricted Access
+
+*** Public
+通过在AndroidManifest.xml文件中指定 =android:export= 属性，内容提供者（content provider）将被公开给其他应用程序。对应API Level 16之前的Android，内容提供者默认是公开的，除非指定 android:exported="false" 。例如：
+#+BEGIN_QUOTE
+<provider android:exported="true" android:name="MyContentProvider" android:authorities="com.example.mycontentprovider" />
+#+END_QUOTE
+如果要将内容提供者设为公开，则存储在提供者中的数据可以被其他应用程序访问。因此，它应该被设计为仅处理非敏感信息。
+
+*** Private
+可以通过在AndroidManifest.xml文件中设置 =android:export= 属性来使提供者成为私有的。从API Level 17及以后的版本，如非特别指定，内容提供者（content provider）默认时私有的。例如： 
+#+BEGIN_QUOTE
+<provider android:exported="false" android:name="MyContentProvider" android:authorities="com.example.mycontentprovider" />
+#+END_QUOTE
+如果不共享content provider与其他应用，应该在manifest文件中指定 android:exported="false" 。 *Note* 在API Level 8及以前的版本，即使指定了 android:exported="false"，其他应用还是可以访问content provider。
+
+*** Restricted Access
+<todo>
+
+** DRD07-X. Protect exported services with strong permissions
+导出服务应始终以强权限进行保护。
+<todo>
+
+** DRD08-J. Always canonicalize a URL received by a content provider
+通过使用 =ContentProvider.openFile()= 方法。你可以为另一个程序提供访问你的应用程序数据（文件）的功能。依靠 =ContentProvider= 的实现，使用该方法可能导致 _目录遍历漏洞_。因此，当通过content provider交换文件时，路径应在使用前进行规范化。
+
+此规则是一个Android特定实例对于： IDS01-J. Normalize strings before validating them) 和  IDS02-J. Canonicalize path names before validating them
+
+*** 合规方案
+在下面的合规解决方案中，一个路径在使用前通过 =Uri.decode= 进行编码处理。此外，在创建File对象之后，路径被规范化通过调用 =File.getCanonicalPath()= 并检查它是否包含在 =IMAGE_DIRECTORY= 。
+
+通过使用规范化路径，即使提供双重编码路径，目录遍历也将得到缓解。
+
+#+BEGIN_SRC java
+private static String IMAGE_DIRECTORY = localFile.getAbsolutePath();
+  public ParcelFileDescriptor openFile(Uri paramUri, String paramString)
+      throws FileNotFoundException {
+    String decodedUriString = Uri.decode(paramUri.toString());
+    File file = new File(IMAGE_DIRECTORY, Uri.parse(decodedUriString).getLastPathSegment());
+    if (file.getCanonicalPath().indexOf(localFile.getCanonicalPath()) != 0) {
+      throw new IllegalArgumentException();
+    }
+    return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
+  }
+#+END_SRC
+
+** DRD09. Restrict access to sensitive activities
+在Android上，在AndroidManifest.xml文件中为activity声明intent filter意味着activity可能被输出到其他apps。如果此activity只用于app的内部使用，并且intent filter被声明，则任何其他apps（包括恶意软件）都可以激活该activity以进行意外的使用。
+
+在Twicca app（v0.7.0~v0.9.30）存在这样一个漏洞。在启动Twicca后，另一个没有访问SD卡或网络权限的app可以上传图片或电影存储在SD卡。
+
+*** 合规方案
+这个合规解决方案中activity是not exported。
+#+BEGIN_SRC xml
+<activity android:configChanges="keyboard|keyboardHidden|orientation" android:name=".media.yfrog.YfrogUploadDialog" android:theme="@style/ VulnerableTheme.Dialog" android:windowSoftInputMode="stateAlwaysHidden" android:exported="false">    
+</activity>
+#+END_SRC
+在AndroidManifest.xml文件的activity标签中声明 android:exported="false" ，此activity被限制只能接受相同app或来自有相同user ID的app的intent。
+
+*** Twicca的合规方案
+Twicca v0.9.31版本修复了这个漏洞。它通过在 onCreate() 方法中增加检查调用者的包名是否和自己的包名一致，如果包名不同则此activity退出。
+#+BEGIN_SRC java
+public void onCreate(Bundle arg5) {
+    super.onCreate(arg5);
+    ...
+    ComponentName v0 = this.getCallingActivity();
+    if(v0 == null) {
+        this.finish();
+    } else if(!jp.r246.twicca.equals(v0.getPackageName())) {
+        this.finish();
+        } else {
+            this.a = this.getIntent().getData();
+            if(this.a == null) {
+                this.finish();
+            }
+            ...
+        }
+    }
+}
+#+END_SRC
+
+Android开发者可以任意选择其包名，因此不同的开发者可以选择相同的包名。因此，通常是不推荐通过包名来验证activity的调用者。推荐方法是检查开发者的证书。

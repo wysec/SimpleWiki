@@ -1,0 +1,168 @@
+* Rule 01. File I/O and Logging(FIO)/文件IO和记录
+** DRD00. Do not store sensitive information on external storage (SD card) unless encrypted first
+Android提供了几个选项来保存持久的应用数据，其中一个是外部存储（ =/sdcard, /mnt/sdcard= ）。"外部存储"的例子包括设备内部的微型或标准尺寸的SD卡。
+
+在Android 4.1之前，文件保存在外部存储是全局可读的。在Android 1之前，保存到外部存储的文件是全局可写的。从Android 1到Android 4.3，只有app有 =WRITE_EXTERNAL_STORAGE= 权限才能写任意app在外部存储的任意文件。从Android 4.4开始，基于目录记录创建文件的组和模式，这允许app权限基于其包名来管理/读取/写入目录结构中的文件。从Android 4.4开始，用户（包括作为用户的应用）与Android设备控制的其他应用的主外部存储空间隔离。
+
+由于缺乏上述描述的限制，写入外部存储器的文件可以由设备上安装的其他应用程序（对于允许读/写的Android版本）和任何可访问文件的人员进行修改或读取。
+
+开发任意不要存储敏感数据到外部存储上除非数据已被加密，因为外部存储的文件没有可用性、完整性和保密性的保障。
+
+*** 不合规代码示例
+下面的代码创建文件到外部存储，并且保存了敏感信息到这个文件（ *不合规* ）：
+#+BEGIN_SRC java
+private String filename = "myfile"
+ 
+private String string = "sensitive data such as credit card number"
+FileOutputStream fos = null;
+ 
+try {
+  File file = new File(getExternalFilesDir(TARGET_TYPE), filename);
+  fos = new FileOutputStream(file, false);
+  fos.write(string.getBytes());
+} catch (FileNotFoundException e) {
+  // handle FileNotFoundException
+} catch (IOException e) {
+  // handle IOException
+} finally {
+  if (fos != null) {
+    try {
+    fos.close();
+    } catch (IOException e) {
+      // handle error
+    }
+  }
+}
+#+END_SRC
+
+**** Proof of Concept
+通常，应用存储文件的目录如下：
+#+BEGIN_QUOTE
+/sdcard/Android/data/com.company.app/files/save/appdata/save_appdata
+#+END_QUOTE
+
+*** 合规方案 #1（保存文件在内部存储）
+下面的代码使用 =openFileOutput()= 方法并以 =MODE_PRIVATE= 权限集来创建 “myfile” 在应用程序数据目录中，以便其他应用不能访问这个文件：
+#+BEGIN_SRC java
+private String filename = "myfile"
+private String string = "sensitive data such as credit card number"
+FileOutputStream fos = null;
+ 
+try {
+   fos = openFileOutput(filename, Context.MODE_PRIVATE);
+   fos.write(string.getBytes());
+   fos.close();
+} catch (FileNotFoundException e) {
+  // handle FileNotFoundException
+} catch (IOException e) {
+  // handle IOException
+} finally {
+  if (fos != null) {
+    try {
+      fos.close();
+    } catch (IOException e) {
+      // handle error
+    }
+  }
+}
+#+END_SRC
+
+*** 合规方案 #2
+在将数据存储在诸如SD卡之类的外部存储器之前先安全地加密数据。 
+*注意* ：Android和其他加密库中的许多默认和非默认行为已被发现使用不安全加密方法。
+
+** DRD04-J. Do not log sensitive information
+Android为应用程序提供了输出日志记录信息和获取日志输出的功能。应用程序可以使用 =android.util.Log= 类将信息发送到日志输出。要获得日志输出，应用程序可以执行 =logcat= 命令。
+
+*** To log output
+=android.util.Log= 类允许多种可能：
++ Log.d(Debug)
++ Log.e(Error)
++ Log.i(Info)
++ Log.v(Verbose)
++ Log.w(Warn)
+
+**** 示例
+#+BEGIN_EXAMPLE
+Log.v("method", Login.TAG + ", account=" + str1);
+Log.v("method", Login.TAG + ", password=" + str2);
+#+END_EXAMPLE
+
+**** 获取日志输出
+在manifest文件中声明 =READ_LOGS= 权限，以便app能读取输出日志：
+=AndroidManifest.xml=
+#+BEGIN_QUOTE
+<uses-permission android:name="android.permission.READ_LOGS"/>
+#+END_QUOTE
+从应用程序调用logcat:
+#+BEGIN_SRC java
+Process mProc = Runtime.getRuntime().exec(
+    new String[]{"logcat", "-d", "method:V *:S$Bc`W^(B)"});
+ 
+BufferedReader mReader = new BufferedReader(
+    new InputStreamReader(proc.getInputStream()));
+#+END_SRC
+
+在Android 4.0以前，任何有 =READ_LOGS= 权限的应用程序都能获得所有其它应用程序的日志输出。在Android 4.1以后，即使应用有这个权限，也不能获得其它应用的日志输出了。
+
+然而，将Android设备连接到PC，还是可以获得其他应用程序的日志输出。
+
+因此，要特别注意应用程序不要发送敏感信息到日志输出。
+
+*** 不合规代码示例 #1
+下面代码是Android的Facebook SDK，它以纯文本格式发送Facebook的访问令牌到输出日志中。
+#+BEGIN_SRC java
+Log.d("Facebook-authorize", "Login Success! access_token="
+      + getAccessToken() + " expires="
+      + getAccessExpires());
+#+END_SRC
+
+*** 不合格代码示例 #2
+另一个例子，Android的天气报告将用户的位置数据发送到日志输出，如下所示：
+#+BEGIN_QUOTE
+I/MyWeatherReport( 6483): Re-use MyWeatherReport data
+I/ ( 6483): GET JSON: http://example.com/smart/repo_piece.cgi?arc=0&lat=26.209026&lon=127.650803&rad=50&dir=-999&lim=52&category=1000
+#+END_QUOTE
+
+如果用户使用Android 4.0或以前的系统，其它有 =READ_LOGS= 权限的应用能获得用户的位置信息，即使其在manifest文件中没有声明 =ACCESS_FINE_LOCATION= 权限。
+
+**** Proof of Concept
+下面例子展示从漏洞应用获得输出日志信息：
+#+BEGIN_SRC java
+final StringBuilder slog = new StringBuilder();
+ 
+try {
+  Process mLogcatProc;
+  mLogcatProc = Runtime.getRuntime().exec(new String[]
+      {"logcat", "-d", "LoginAsyncTask:I APIClient:I method:V *:S" });
+ 
+  BufferedReader reader = new BufferedReader(new InputStreamReader(
+      mLogcatProc.getInputStream()));
+ 
+  String line;
+  String separator = System.getProperty("line.separator");
+ 
+  while ((line = reader.readLine()) != null) {
+    slog.append(line);
+    slog.append(separator);
+  }
+  Toast.makeText(this, "Obtained log information", Toast.LENGTH_SHORT).show();
+ 
+} catch (IOException e) {
+  // handle error
+}
+ 
+TextView tView = (TextView) findViewById(R.id.logView);
+tView.setText(slog);
+#+END_SRC
+
+*** 适用性
+应用程序应确保它们不会将敏感信息发送到日志输出。如果应用程序包含第三方库，开发人员应确保此三方库不会将敏感信息发送到日志输出。一个常见的解决方案是为应用程序声明和使用自定义日志类，从而基于Debug/Release自动打开/关闭日志输出。开发人员可以使用ProGuard来删除指定的方法调用。这假设该方法不含副作用。
+
+** DRD11. Ensure that sensitive data is kept secure
+在Android app中，数据可以通过intent进行传递；或者数据也能被写到文件中，使用shared preferences进行发布；或者数据也可以存储在数据库中。在这些情况下，如果是敏感数据，那么保证此敏感数据的安全是非常重要的。也就是说，如果数据所有者不愿意，其他应用程序（或更严格地说，具有不同用户标识的应用程序）不可能访问此数据，或者数据也不能被其他程序或人员访问。
+
+在创建文件，shared preference或者数据库时使用 =MODE_PRIVATE= 在内部存储，或者使用 =MODE_PRIVATE= 和安全的加密在外部存储。 =MODE_PRIVATE= 是在类 =android.content.Context= 中定义的一个常量。 它可以作为mode parameter在 =openFileOutput()= ， =getSharedPreferences()= 和 =openOrCreateDatabase()= 方法中使用。
+
+** DRD12. Do not trust data that is world writable
+此规则要求不要信任不可信源的数据。

@@ -1,0 +1,60 @@
+
+
+** 环境
+
+- UnCrackable-Level1.apk
+- Frida 12.6.11
+
+** 分析apk
+
+1. 绕过debug检测
+2. 绕过root检测
+3. Hook sg.vantagepoint.a.a的a方法，获取其返回值就是key
+
+Frida脚本：
+#+BEGIN_SRC javascript
+// UnCrackable-Level1.apk
+
+Java.perform(function () {
+    // Function to hook is defined here
+    var bbClass = Java.use("sg.vantagepoint.a.b");
+    bbClass.a.implementation = function (arg1) {
+        //console.log('Start '+arg1);
+        //var retval = this.a(arg1);
+        //console.log('Retval: '+retval);
+        return false;
+    };
+
+    // Hook function of root check.
+    var ccClass = Java.use("sg.vantagepoint.a.c");
+    ccClass.a.implementation = function () {
+        return false;
+    };
+    ccClass.b.implementation = function () {
+        return false;
+    };    
+    ccClass.c.implementation = function () {
+        return false;
+    };
+
+    // Hook verify function.
+    // var aaClass = Java.use("sg.vantagepoint.uncrackable1.a");
+    // aaClass.a.implementation = function (arg) {
+    //     return true;
+    // };
+    var aaClass = Java.use("sg.vantagepoint.a.a");
+    aaClass.a.implementation = function (arg1, arg2) {
+    	var retval = this.a(arg1, arg2);
+    	console.log('Retval: '+retval);
+
+        var password = ''
+        for(var i = 0; i < retval.length; i++) {
+            password += String.fromCharCode(retval[i]);
+        }
+        console.log("[*] Decrypted: " + password);
+
+        return retval;
+    };
+
+});
+#+END_SRC

@@ -1,0 +1,17 @@
+
+
+1. 修改APK包中的AndroidManifest.xml文件，添加 ~android:debuggable="true"~ ，使App为可调试配置。并安装到设备中。
+
+2. 将App中的classes.dex放到IDA中。选择Debugger->Debugger Options，勾选Suspend on process entry point，然后点击Set specific options并填入Package name和Activity，都可以在AndroidManifest.xml文件中获取。
+
+3. 选择IDA的Debugger->Process Options，设置端口为8700，这个可以通过DDMS来查看。
+
+4. 找需要下断点的地方设置端点。
+
+5. 在调试过程可选择Debugger->Debugger windows->locals打开本地变量窗口。
+
+
+
+问题： 开始调试时总是提示“Can’t bind socket”tcp:8700”。
+
+解决： 关闭DDMS。
